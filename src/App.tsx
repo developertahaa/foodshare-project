@@ -1,26 +1,46 @@
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import Home from './pages/HomePage';
+import Donate from './pages/Donatenow';
+import AskHelp from './pages/Askhelp';
+import LoginSignup from './pages/Login';
+import Volunteer from './pages/Volunteernow';
+import HelpHome from './pages/Helphome';
+import Events from './pages/Events';
+import Profile from './pages/Profile';
+import Partnership from './pages/Partnership';
 
-function App() {
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Tos from './pages/Tos';
+import Faqs from './pages/faq';
+
+export default function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/donate" element={<Donate />} />
+            <Route path="/ask-help" element={<AskHelp />} />
+            <Route path="/login" element={<LoginSignup />} />
+            <Route path="/volunteer" element={<Volunteer />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/helphome" element={<HelpHome />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/partnership" element={<Partnership />} />
+            <Route path="/faq" element={<Faqs />} />
+            <Route path="/Tos" element={<Tos />} />
+            <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
+
+
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </Router>
   );
 }
-
-export default App;

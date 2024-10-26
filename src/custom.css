@@ -1,0 +1,233 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&display=swap');
+
+:root {
+  --color-primary: #FF6B6B;
+  --color-secondary: #4ECDC4;
+  --color-background: #F7FFF7;
+  --color-text: #2F2E41;
+  --color-text-light: #6C757D;
+}
+
+/* Apply custom styles */
+body {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.75rem;
+}
+
+p {
+  font-size: 1.125rem;
+}
+
+a {
+  color: var(--color-primary);
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--color-secondary);
+}
+
+.navbar {
+  font-size: 1.125rem;
+  background-color: var(--color-primary);
+}
+
+.navbar a {
+  color: white;
+}
+
+.navbar a:hover {
+  color: white;
+}
+
+.hero-text {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.cta-button {
+  font-size: 1.25rem;
+  font-weight: 600;
+  background-color: var(--color-secondary);
+  color: white;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.cta-button:hover {
+  background-color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+.section-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.card-text {
+  font-size: 1rem;
+  color: var(--color-text-light);
+}
+
+.footer {
+  font-size: 1rem;
+  background-color: var(--color-secondary);
+  color: white;
+}
+
+.footer a {
+  color: var(--color-accent);
+}
+
+.footer a:hover {
+  color: white;
+}
+
+/* Responsive font sizes */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  p {
+    font-size: 1rem;
+  }
+
+  .hero-text {
+    font-size: 2.5rem;
+  }
+
+  .section-title {
+    font-size: 2rem;
+  }
+}
+
+/* Additional styles for enhanced visual appeal */
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 30px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+.btn-outline-primary {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.section {
+  padding: 4rem 0;
+}
+
+.section-bg {
+  background-color: rgba(78, 205, 196, 0.1);
+}
+
+.testimonial {
+  background-color: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.testimonial-text {
+  font-style: italic;
+  color: var(--color-text-light);
+}
+
+.testimonial-author {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.social-icon {
+  font-size: 1.5rem;
+  color: var(--color-accent);
+  transition: color 0.3s ease;
+}
+
+.social-icon:hover {
+  color: white;
+}
+/* Add this CSS to your stylesheet */
+
+.navbar {
+  position: relative; /* Context for the loading line */
+}
+
+.loading-line {
+  position: absolute;
+  height: 4px; /* Height of the loading line */
+  background-color: #AFD487; /* Change this to your preferred color */
+  bottom: 0; /* Position it at the bottom of the navbar */
+  left: 0; /* Start from the left */
+  width: 0; /* Start with 0 width */
+  transition: width 0.5s ease; /* Transition effect for width */
+}
+.login{
+  background-color: white;
+  color: green !important;
+}
