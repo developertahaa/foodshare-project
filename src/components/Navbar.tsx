@@ -1,20 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, Gift, HandHeart, Users, Calendar, Handshake, HelpCircle, LogIn, LogOut } from 'lucide-react';
+import { Home, Gift, HandHeart, Users, Calendar, Handshake, HelpCircle, LogIn, LogOut, Bell, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
 export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [loadingWidth, setLoadingWidth] = useState(0); // State for loading line width
+  const [showNotifications, setShowNotifications] = useState(false); // State for showing notifications
+  const [notifications, setNotifications] = useState([]); // Notifications state
 
   useEffect(() => {
     const sessionId = sessionStorage.getItem('sessionId');
     const email = sessionStorage.getItem('userEmail');
+
+    
     if (sessionId && email) {
       setIsLoggedIn(true);
       setUserEmail(email);
     }
   }, []);
+
+  console.log("new", userEmail);
 
   const navigate = useNavigate();
 
@@ -32,6 +38,33 @@ export default function Navbar() {
     }, 500); // Duration matches the CSS transition
   };
 
+  const toggleNotifications = async () => {
+    setShowNotifications(!showNotifications); // Toggle notification window
+
+    if (!showNotifications && userEmail) {
+      try {
+        // Send request to backend to fetch notifications for the user
+        const response = await fetch('http://localhost:5003/getNotification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ user_email: userEmail }),
+        });
+        console.log(userEmail);
+
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data.notifications || []); // Assuming the response contains a 'notifications' field
+        } else {
+          console.error('Failed to fetch notifications');
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    }
+  };
+
   return (
     <nav className="bg-green-600 text-white sticky top-0 z-50 shadow-md navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -45,10 +78,9 @@ export default function Navbar() {
             <NavLink to="/" icon={<Home className="h-4 w-4" />} onClick={handleNavLinkClick}>Home</NavLink>
             <NavLink to="/donate" icon={<Gift className="h-4 w-4" />} onClick={handleNavLinkClick}>Donate</NavLink>
             <NavLink to="/ask-help" icon={<HandHeart className="h-4 w-4" />} onClick={handleNavLinkClick}>Ask for Help</NavLink>
-            <NavLink to="/volunteer" icon={<Users className="h-4 w-4" />} onClick={handleNavLinkClick}>Volunteer</NavLink>
+            {isLoggedIn && <NavLink to="/volunteer" icon={<Users className="h-4 w-4" />} onClick={handleNavLinkClick}>Volunteer with us</NavLink>}
             <NavLink to="/partnership" icon={<Handshake className="h-4 w-4" />} onClick={handleNavLinkClick}>Partner With Us</NavLink>
             <NavLink to="/faq" icon={<HelpCircle className="h-4 w-4" />} onClick={handleNavLinkClick}>FAQs</NavLink>
-            {isLoggedIn && <NavLink to="/events" icon={<Calendar className="h-4 w-4" />} onClick={handleNavLinkClick}>Events</NavLink>}
           </div>
 
           <div className="flex items-center ml-auto">
@@ -56,12 +88,47 @@ export default function Navbar() {
               <>
                 <LogoutButton icon={<LogOut className="h-4 w-4 mr-1" />} onClick={handleLogout}>Logout</LogoutButton>
                 <Link
-                  to="/profile"
-                  className="w-8 h-8 bg-white text-green-600 rounded-full flex items-center justify-center text-xs font-bold ml-2 transition-colors duration-200"
-                  aria-label="Profile"
+  to="/profile"
+  className="w-8 h-8 bg-white z-1 rounded-full flex items-center justify-center text-xs font-bold ml-2 transition-colors duration-200"
+  aria-label="Profile"
+>
+  {userEmail ? <span style={{ color: '#16A34A' }}>{userEmail.charAt(0).toUpperCase()}</span> : 'N/A'}
+</Link>
+
+
+
+
+                {/* Notification Icon */}
+                <button
+                  onClick={toggleNotifications}
+                  className="relative ml-3 text-white hover:text-green-200"
+                  aria-label="Notifications"
                 >
-                  {userEmail ? userEmail.charAt(0).toUpperCase() : ''}
-                </Link>
+                  <Bell className="h-6 w-6" />
+                  {notifications.length > 0 && (
+                    <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-red-600 rounded-full"></span>
+                  )}
+                </button>
+
+                {/* Notification Window */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-80 w-80 bg-white text-black rounded-lg shadow-lg p-4 max-h-60 overflow-y-auto z-50 transition-opacity duration-500 opacity-100">
+                    <h3 className="font-semibold text-lg">Notifications</h3>
+                    <div className="mt-4 space-y-2">
+                      {notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`p-2 bg-${notification.status === 'Unread' ? 'red-100' : notification.status === 'Read' ? 'green-100' : 'blue-100'} rounded-md flex items-start space-x-3`}
+                        >
+                          {notification.status === 'Read' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                          {notification.status === 'Unread' && <AlertCircle className="h-5 w-5 text-red-500" />}
+                          {notification.status === '' && <Info className="h-5 w-5 text-blue-500" />}
+                          <p className="text-sm">{notification.message} - {notification.status}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <LoginButton to="/login" icon={<LogIn className="h-4 w-4 mr-1" />}>Login</LoginButton>

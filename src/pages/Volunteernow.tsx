@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Users, Clock, MapPin, Briefcase, Heart, Star, ArrowRight, Quote, LogIn, CheckCircle, X } from 'lucide-react'
 import Swal from 'sweetalert2';
 
@@ -10,6 +10,7 @@ export default function Volunteer() {
   const closeModal = () => setIsModalOpen(false)
 
   const [formData, setFormData] = useState({
+    user_email: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -18,7 +19,6 @@ export default function Volunteer() {
     occupation: '',
     interests: [],
     experience: '',
-    agreedToTerms: false,
   });
 
   const handleChange = (e) => {
@@ -34,38 +34,53 @@ export default function Volunteer() {
     const selectedOptions = Array.from(e.target.selectedOptions, (option) => option.value);
     setFormData({ ...formData, interests: selectedOptions });
   };
+
+  const [interests, setInterests] = useState([]); // State to store fetched interests
+
+  // Fetch interests from backend
+  useEffect(() => {
+    const fetchInterests = async () => {
+      try {
+        const response = await fetch('http://localhost:5003/getInterest'); // Using the specified URL
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setInterests(data); // Store the fetched interests in state
+      } catch (error) {
+        console.error('Error fetching interests:', error);
+      }
+    };
+
+    fetchInterests();
+  }, []);
   
   // Submit form data to the server
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+  
+    const formDataWithEmail = {
+      ...formData,
+      email: sessionStorage.getItem('userEmail'), // Or get from session/cookie
+    };
+  
     try {
-      const response = await fetch('http://localhost:5008/volunteer', {
+      const response = await fetch('http://localhost:5003/storeVolunteerData', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formDataWithEmail),
       });
-
+  
       if (response.ok) {
-        Swal.fire({
-          title: 'Success!',
-          text: 'Volunteer data submitted successfully!',
-          icon: 'success',
-          confirmButtonText: 'OK'
-        });
+        alert('Form submitted successfully!');
       } else {
-        Swal.fire({
-          title: 'Error!',
-          text: 'There was an issue submitting the form.',
-          icon: 'error',
-          confirmButtonText: 'Try Again'
-        });
+        alert('Error submitting form');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error submitting form');
+      alert('An error occurred');
     }
   };
 
@@ -286,25 +301,8 @@ export default function Volunteer() {
           onChange={handleChange}
         />
       </div>
-      <div className="col-span-2">
-        <label htmlFor="interests" className="block text-sm font-medium text-gray-700 mb-1">
-          Areas of Interest
-        </label>
-        <select
-          id="interests"
-          name="interests"
-          multiple
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-          value={formData.interests}
-          onChange={handleSelectChange}
-        >
-          <option value="food-distribution">Food Distribution</option>
-          <option value="fundraising">Fundraising</option>
-          <option value="event-planning">Event Planning</option>
-          <option value="administrative">Administrative Support</option>
-          <option value="outreach">Community Outreach</option>
-        </select>
-      </div>
+      
+
       <div className="col-span-2">
         <label htmlFor="experience" className="block text-sm font-medium text-gray-700 mb-1">
           Previous Volunteer Experience
@@ -318,26 +316,12 @@ export default function Volunteer() {
           onChange={handleChange}
         ></textarea>
       </div>
-      <div className="col-span-2">
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            className="form-checkbox h-5 w-5 text-green-600"
-            name="agreedToTerms"
-            checked={formData.agreedToTerms}
-            onChange={handleChange}
-            required
-          />
-          <span className="ml-2 text-sm text-gray-700">
-            I agree to the <a href="/tos" className="text-green-600 hover:underline">Terms of Service</a> and{' '}
-            <a href="/privacypolicy" className="text-green-600 hover:underline">Privacy Policy</a>
-          </span>
-        </label>
-      </div>
+     
       <div className="flex justify-end p-6 border-t">
         <button
           type="button"
           onClick={() => setFormData({
+            user_email: '',
             firstName: '',
             lastName: '',
             email: '',
@@ -346,7 +330,6 @@ export default function Volunteer() {
             occupation: '',
             interests: [],
             experience: '',
-            agreedToTerms: false,
           })}
           className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md mr-2 hover:bg-gray-300 transition duration-300"
         >

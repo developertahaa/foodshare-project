@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Search, X, MapPin, Clock, User, Utensils, Heart, ShoppingBag, PlusCircle, Calendar } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for redirection
 import Swal from 'sweetalert2'
@@ -8,57 +8,63 @@ import axios from 'axios'
 
 
 interface FoodItem {
-  id: number
-  name: string
-  description: string
-  quantity: string
-  location: string
-  expirationDate: string
-  donorName: string
-  image: string
+  id: number;
+  name: string;
+  quantity: string;
+  location: string;
+  donorName: string;
+  isAnonymous: number;
+  expirationDate: string;
+  status: string;
+  image: string;
 }
 
-const initialFoodItems: FoodItem[] = [
-  {
-    id: 1,
-    name: "Fresh Vegetables",
-    description: "A mix of fresh vegetables including carrots, tomatoes, and lettuce.",
-    quantity: "5 kg",
-    location: "Downtown Community Center",
-    expirationDate: "2023-05-30",
-    donorName: "Local Farm Co-op",
-    image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=300&q=80"
-  },
-  {
-    id: 2,
-    name: "Canned Soup",
-    description: "Assorted flavors of canned soup.",
-    quantity: "20 cans",
-    location: "Food Bank on 5th Street",
-    expirationDate: "2024-03-15",
-    donorName: "GroceryMart",
-    image: "https://images.unsplash.com/photo-1590189182193-1fd44f2b4048?auto=format&fit=crop&w=300&q=80"
-  },
-  {
-    id: 3,
-    name: "Bread",
-    description: "Freshly baked whole wheat bread.",
-    quantity: "10 loaves",
-    location: "Bakery on Main St",
-    expirationDate: "2023-05-25",
-    donorName: "Sunshine Bakery",
-    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=300&q=80"
-  },
-]
 
+  
 export default function HelpHome() {
-  const [foodItems] = useState<FoodItem[]>(initialFoodItems)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedLocation, setSelectedLocation] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDonateModalOpen, setIsDonateModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null)
+  const [donationId, setDonationId] = useState(null); // To store the selected donation_id
+
+
+
+  const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
+  useEffect(() => {
+    // Fetch the donations from the backend
+    fetch('http://localhost:5003/getDonations')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Assuming data is an array of donations
+        const transformedItems: FoodItem[] = data.map((donation: any) => ({
+          id: donation.donation_id,
+          name: donation.food_item_name,
+          donorName: donation.donor_name,  // Example: You can use a more detailed description if needed
+          quantity: donation.quantity,
+          location: donation.donationLocation,
+          expirationDate: donation.date_of_donation,
+          isAnonymous: donation.isAnonymous,
+          status: donation.status,  
+          image: 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',  // Replace with actual image URL if available
+        }));
+        setFoodItems(transformedItems);
+      })
+      .catch(error => {
+        console.error('Error fetching donations:', error);
+        // Optionally, you can handle the error by showing a user-friendly message
+      });
+  }, []);
+
+
   const [formData, setFormData] = useState({
+    user_email: '',
     donorName: '',
     donorAddress: '',
     donorContact: '',
@@ -67,17 +73,15 @@ export default function HelpHome() {
     donationLocation: '',
     donateAnonymously: false,
     scheduleDate: '',
-    scheduleTime: '',
-    isVolunteer: false,
-    volunteerPhone: '',
-  })
+    isVolunteer: false
+    })
 
   const [requestFormData, setRequestFormData] = useState({
+    user_email: '',
     name: '',
     address: '',
     canCollect: false,
     quantity: '',
-    agreeToTerms: false,
   })
 
   const navigate = useNavigate(); // Initialize useNavigate
@@ -125,61 +129,76 @@ export default function HelpHome() {
 
   const handleSubmitDonation = async (e: React.FormEvent) => {
     e.preventDefault()
-    try {
-      const url = 'http://localhost:5009/submit'
-      console.log('Submitting donation:', formData)
-      
-      const response = await axios.post(url, formData, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        timeout: 5000, // 5 seconds timeout
-      })
 
-      console.log('Server response:', response.data)
-
-      if (response.status === 200) {
-        Swal.fire({
-          title: 'Donation Successful',
-          text: 'Thank you for your generous donation!',
-          icon: 'success',
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#10B981',
+    // Ensure user_email is correctly set from sessionStorage
+    const userEmail = sessionStorage.getItem('userEmail')
+    if (!userEmail) {
+        return Swal.fire({
+            title: 'Error',
+            text: 'User email is not available. Please login again.',
+            icon: 'error',
+            confirmButtonText: 'OK',
         })
-      } else {
-        throw new Error(`Unexpected response status: ${response.status}`)
-      }
-    } catch (error) {
-      console.error('Error occurred during donation submission:', error)
-      let errorMessage = 'Failed to submit donation. Please try again later.'
-      
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
-          console.error('Server error response:', error.response.data)
-          errorMessage = error.response.data.message || errorMessage
-        } else if (error.request) {
-          // The request was made but no response was received
-          console.error('No response received:', error.request)
-          errorMessage = 'No response from server. Please check your internet connection.'
-        } else {
-          // Something happened in setting up the request that triggered an Error
-          console.error('Error setting up request:', error.message)
-        }
-        console.error('Axios error config:', error.config)
-      }
-
-      Swal.fire({
-        title: 'Error',
-        text: errorMessage,
-        icon: 'error',
-        confirmButtonText: 'OK',
-      })
     }
 
+    // Set user_email in formData if not already set
+    const donationData = {
+        ...formData,
+        user_email: userEmail, // Ensure the email is correctly set
+    }
+
+    try {
+        const url = 'http://localhost:5003/submit-donation'
+        console.log('Submitting donation:', donationData)
+        
+        const response = await axios.post(url, donationData, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            timeout: 5000, // 5 seconds timeout
+        })
+
+        console.log('Server response:', response.data)
+
+        if (response.status === 201) {
+            Swal.fire({
+                title: 'Donation Successful',
+                text: 'Thank you for your generous donation!',
+                icon: 'success',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#10B981',
+            })
+        } else {
+            throw new Error(`Unexpected response status: ${response.status}`)
+        }
+    } catch (error) {
+        console.error('Error occurred during donation submission:', error)
+        let errorMessage = 'Failed to submit donation. Please try again later.'
+        
+        if (axios.isAxiosError(error)) {
+            if (error.response) {
+                // The request was made and the server responded with a status code
+                console.error('Server error response:', error.response.data)
+                errorMessage = error.response.data.message || errorMessage
+            } else if (error.request) {
+                console.error('No response received:', error.request)
+                errorMessage = 'No response from server. Please check your internet connection.'
+            } else {
+                console.error('Error setting up request:', error.message)
+            }
+            console.error('Axios error config:', error.config)
+        }
+
+        Swal.fire({
+            title: 'Error',
+            text: errorMessage,
+            icon: 'error',
+            confirmButtonText: 'OK',
+        })
+    }
     // Reset form after submission
     setFormData({
+      user_email: '',
       donorName: '',
       donorAddress: '',
       donorContact: '',
@@ -188,43 +207,74 @@ export default function HelpHome() {
       donationLocation: '',
       donateAnonymously: false,
       scheduleDate: '',
-      scheduleTime: '',
-      isVolunteer: false,
-      volunteerPhone: '',
-    })
+      isVolunteer: false
+      })
     setIsDonateModalOpen(false)
   }
 
   const handleSubmitRequest = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!requestFormData.agreeToTerms) {
+    e.preventDefault();
+  
+    // Prepare the request data
+    const requestPayload = {
+      donation_id: donationId,
+      user_email: userEmail,
+      name: requestFormData.name,
+      address: requestFormData.address,
+      canCollect: requestFormData.canCollect,
+      quantity: requestFormData.quantity,
+    };
+  
+    try {
+      const response = await fetch('http://localhost:5003/submit-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestPayload),
+      });
+  
+      // Parse the response
+      const data = await response.json();
+      console.log('API Response:', data);
+  
+      if (response.status === 200) {
+        Swal.fire({
+          title: 'Request Submitted',
+          text: data.message || 'Your food request has been submitted successfully.',
+          icon: 'success',
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#10B981',
+        });
+  
+        // Reset form and close modal
+        setRequestFormData({
+          user_email: '',
+          name: '',
+          address: '',
+          canCollect: false,
+          quantity: '',
+        });
+        setIsModalOpen(false);
+      } else {
+        Swal.fire({
+          title: 'Error',
+          text: data.message || 'Something went wrong.',
+          icon: 'error',
+          confirmButtonText: 'OK',
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting request:', error);
       Swal.fire({
         title: 'Error',
-        text: 'You must agree to the terms of service.',
+        text: 'There was an error processing your request.',
         icon: 'error',
         confirmButtonText: 'OK',
-      })
-      return
+      });
     }
-    // Here you would typically send the request to your backend
-    console.log('Submitting request:', requestFormData)
-    Swal.fire({
-      title: 'Request Submitted',
-      text: 'Your food request has been submitted successfully.',
-      icon: 'success',
-      confirmButtonText: 'OK',
-      confirmButtonColor: '#10B981',
-    })
-    setRequestFormData({
-      name: '',
-      address: '',
-      canCollect: false,
-      quantity: '',
-      agreeToTerms: false,
-    })
-    setIsModalOpen(false)
-  }
-
+  };
+  
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -287,34 +337,43 @@ export default function HelpHome() {
     
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredItems.map((item) => (
-                <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl">
-                  <img src={item.image} alt={item.name} className="w-full h-48 object-cover" />
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold mb-2 text-green-800">{item.name}</h3>
-                    <p className="text-gray-600 mb-4">
-                      {item.description.split(" ").length > 10
-                        ? item.description.split(" ").slice(0, 10).join(" ") + "..."
-                        : item.description}
-                    </p>
-                    <div className="flex items-center mb-2">
-                      <MapPin className="h-5 w-5 text-green-600 mr-2" />
-                      <span className="text-gray-700">{item.location}</span>
-                    </div>
-                    <div className="flex items-center mb-2">
-                      <Clock className="h-5 w-5 text-green-600 mr-2" />
-                      <span className="text-gray-700">Expires: {item.expirationDate}</span>
-                    </div>
-                    <div className="flex items-center mb-4">
-                      <User className="h-5 w-5 text-green-600 mr-2" />
-                      <span className="text-gray-700">Donor: {item.donorName}</span>
-                    </div>
-                    <button
-                      onClick={() => handleRequest(item)}
-                      className="w-full flex items-center justify-center bg-green-600 text-white px-4 py-2 transition duration-300 ease-in-out hover:bg-green-700 rounded-md shadow-md"
-                    >
-                      <ShoppingBag className="mr-2" />
-                      Request Food
-                    </button>
+               <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">
+               {/* Status Label */}
+               <div className={`absolute top-2 left-2 text-sm font-semibold px-2 py-1 rounded-full ${item.status === 'Distributed' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}>
+                 {item.status === 'Distributed' ? 'Distributed' : 'Available'}
+               </div>
+             
+               <img src={item.image} alt={item.name} className="w-full h-48 object-cover" />
+               <div className="p-6">
+                 <h3 className="text-xl font-semibold mb-2 text-green-800">{item.name}</h3>
+             
+                 <div className="flex items-center mb-2">
+                   <MapPin className="h-5 w-5 text-green-600 mr-2" />
+                   <span className="text-gray-700">{item.location}</span>
+                 </div>
+                 <div className="flex items-center mb-2">
+                   <Clock className="h-5 w-5 text-green-600 mr-2" />
+                   <span className="text-gray-700">
+                     Expires: {new Date(item.expirationDate).toLocaleDateString()}
+                   </span>
+                 </div>
+             
+                 <div className="flex items-center mb-4">
+                   <User className="h-5 w-5 text-green-600 mr-2" />
+                   <span className="text-gray-700">
+                     {item.isAnonymous !== 1 ? `Donor: ${item.donorName}` : 'Donor: Anonymous'}
+                   </span>
+                 </div>
+             
+                 <button
+                   onClick={() => {handleRequest(item);     setDonationId(item.id);}}
+                   disabled={item.status === 'Distributed'}
+                   className={`w-full flex items-center justify-center ${item.status === 'Distributed' ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} text-white px-4 py-2 transition duration-300 ease-in-out rounded-md shadow-md`}
+                 >
+                   <ShoppingBag className="mr-2" />
+                   Request Food
+                 </button>
+              
                   </div>
                 </div>
               ))}
@@ -324,168 +383,148 @@ export default function HelpHome() {
       </div>
 
       {isDonateModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 landscape-modal">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold text-green-800">Donate Food</h2>
-              <button onClick={() => setIsDonateModalOpen(false)}>
-                <X className="h-6 w-6 text-gray-600" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmitDonation}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex items-center col-span-2">
-                  <input
-                    type="checkbox"
-                    id="donateAnonymously"
-                    name="donateAnonymously"
-                    checked={formData.donateAnonymously}
-                    onChange={handleInputChange}
-                  />
-                  <label htmlFor="donateAnonymously" className="ml-2 text-sm font-medium text-gray-700">Donate Anonymously</label>
-                </div>
-
-                {formData.donateAnonymously && (
-                  <div className="col-span-2 text-sm text-gray-600 mb-4">
-                    Your name will be kept private and will not be shared with anyone.
-                  </div>
-                )}
-
-                <div>
-                  <label htmlFor="donorName" className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
-                  <input 
-                    type="text" 
-                    id="donorName" 
-                    name="donorName"
-                    value={formData.donorName}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
-                    required 
-                  />
-                </div>
-
-
-                <div>
-                  <label htmlFor="donorContact" className="block text-sm font-medium text-gray-700 mb-1">Your Contact Number</label>
-                  <input 
-                    type="tel" 
-                    id="donorContact" 
-                    name="donorContact"
-                    value={formData.donorContact}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="donationName" className="block text-sm font-medium text-gray-700 mb-1">Food Item Name</label>
-                  <input 
-                    type="text" 
-                    id="donationName" 
-                    name="donationName"
-                    value={formData.donationName}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="donationQuantity" className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                  <input 
-                    type="number" 
-                    id="donationQuantity" 
-                    name="donationQuantity"
-                    value={formData.donationQuantity}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="donationLocation" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                  <input 
-                    type="text" 
-                    
-                    id="donationLocation" 
-                    name="donationLocation"
-                    value={formData.donationLocation}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
-                    required 
-                  />
-                </div>
-
-                <div className="flex items-center">
-                  <input 
-                    type="checkbox" 
-                    id="isVolunteer"
-                    name="isVolunteer"
-                    checked={formData.isVolunteer}
-                    onChange={handleInputChange}
-                  />
-                  <label htmlFor="isVolunteer" className="ml-2 text-sm font-medium text-gray-700">Would you like to volunteer?</label>
-                </div>
-
-                {formData.isVolunteer && (
-                  <div>
-                    <label htmlFor="volunteerPhone" className="block text-sm font-medium text-gray-700 mb-1">Your Phone Number</label>
-                    <input 
-                      type="tel" 
-                      id="volunteerPhone" 
-                      name="volunteerPhone"
-                      value={formData.volunteerPhone}
-                      onChange={handleInputChange}
-                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
-                      required 
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label htmlFor="scheduleDate" className="block text-sm font-medium text-gray-700 mb-1">Schedule Date (optional)</label>
-                  <input 
-                    type="date" 
-                    id="scheduleDate" 
-                    name="scheduleDate"
-                    value={formData.scheduleDate}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="scheduleTime" className="block text-sm font-medium text-gray-700 mb-1">Schedule Time (optional)</label>
-                  <input 
-                    type="time" 
-                    id="scheduleTime" 
-                    name="scheduleTime"
-                    value={formData.scheduleTime}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-green-600 text-white px-4 py-3 rounded-md shadow-md transition duration-300 ease-in-out hover:bg-green-700 mt-6"
-              >
-                Confirm
-              </button>
-            </form>
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-800">Terms of Service</h3>
-              <ul className="list-disc list-inside text-sm text-gray-600">
-                <li>All donations are voluntary and can be made anonymously.</li>
-                <li>You are responsible for the delivery of donated food items.</li>
-                <li>You can check more on <a href="#" className="text-green-600 hover:underline">terms & services</a>.</li>
-              </ul>
-            </div>
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 landscape-modal">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-semibold text-green-800">Donate Food</h2>
+        <button onClick={() => setIsDonateModalOpen(false)}>
+          <X className="h-6 w-6 text-gray-600" />
+        </button>
+      </div>
+      <form onSubmit={handleSubmitDonation}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex items-center col-span-2">
+            <input
+              type="checkbox"
+              id="donateAnonymously"
+              name="donateAnonymously"
+              checked={formData.donateAnonymously}
+              onChange={handleInputChange}
+            />
+            <label htmlFor="donateAnonymously" className="ml-2 text-sm font-medium text-gray-700">Donate Anonymously</label>
           </div>
+
+          {formData.donateAnonymously && (
+            <div className="col-span-2 text-sm text-gray-600 mb-4">
+              Your name will be kept private and will not be shared with anyone.
+            </div>
+          )}
+
+          <div>
+            <label htmlFor="donorName" className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+            <input 
+              type="text" 
+              id="donorName" 
+              name="donorName"
+              value={formData.donorName}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
+              required 
+            />
+          </div>
+
+          <div>
+            <label htmlFor="donorContact" className="block text-sm font-medium text-gray-700 mb-1">Your Contact Number</label>
+            <input 
+              type="tel" 
+              id="donorContact" 
+              name="donorContact"
+              value={formData.donorContact}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
+              required 
+            />
+          </div>
+
+          <div>
+            <label htmlFor="donationName" className="block text-sm font-medium text-gray-700 mb-1">Food Item Name</label>
+            <input 
+              type="text" 
+              id="donationName" 
+              name="donationName"
+              value={formData.donationName}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
+              required 
+            />
+          </div>
+
+          <div>
+            <label htmlFor="donationQuantity" className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+            <input 
+              type="number" 
+              id="donationQuantity" 
+              name="donationQuantity"
+              value={formData.donationQuantity}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
+              required 
+            />
+          </div>
+
+          <div>
+            <label htmlFor="donationLocation" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <input 
+              type="text" 
+              id="donationLocation" 
+              name="donationLocation"
+              value={formData.donationLocation}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
+              required 
+            />
+          </div>
+
+          <div className="flex items-center">
+            <input 
+              type="checkbox" 
+              id="isVolunteer"
+              name="isVolunteer"
+              checked={formData.isVolunteer}
+              onChange={handleInputChange}
+            />
+            <label htmlFor="isVolunteer" className="ml-2 text-sm font-medium text-gray-700">Would you like to volunteer?</label>
+          </div>
+
+          <div>
+            <label htmlFor="scheduleDate" className="block text-sm font-medium text-gray-700 mb-1">Schedule Date (optional)</label>
+            <input 
+              type="date" 
+              id="scheduleDate" 
+              name="scheduleDate"
+              value={formData.scheduleDate}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-600" 
+            />
+          </div>
+
+          {/* Hidden input for user email */}
+          <input 
+            type="hidden" 
+            name="user_email" 
+            value={sessionStorage.getItem('userEmail')} 
+          />
+          
         </div>
-      )}
+        <button
+          type="submit"
+          className="w-full bg-green-600 text-white px-4 py-3 rounded-md shadow-md transition duration-300 ease-in-out hover:bg-green-700 mt-6"
+        >
+          Confirm
+        </button>
+      </form>
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold text-gray-800">Terms of Service</h3>
+        <ul className="list-disc list-inside text-sm text-gray-600">
+          <li>All donations are voluntary and can be made anonymously.</li>
+          <li>You are responsible for the delivery of donated food items.</li>
+          <li>You can check more on <a href="#" className="text-green-600 hover:underline">terms & services</a>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+)}
+
 
 
 {isModalOpen && selectedItem && (
@@ -546,17 +585,7 @@ export default function HelpHome() {
                     required 
                   />
                 </div>
-                <div className="flex items-center">
-                  <input 
-                    type="checkbox" 
-                    id="agreeToTerms"
-                    name="agreeToTerms"
-                    checked={requestFormData.agreeToTerms}
-                    onChange={handleRequestInputChange}
-                    className="mr-2"
-                  />
-                  <label htmlFor="agreeToTerms" className="text-sm font-medium text-gray-700">I agree to the terms of service</label>
-                </div>
+               
               </div>
               <button
                 type="submit"

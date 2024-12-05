@@ -11,7 +11,7 @@ import HelpHome from './pages/Helphome';
 import Events from './pages/Events';
 import Profile from './pages/Profile';
 import Partnership from './pages/Partnership';
-
+import AdminProfile from './pages/AdminProfile';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Tos from './pages/Tos';
 import Faqs from './pages/faq';
@@ -35,6 +35,8 @@ export default function App() {
             <Route path="/faq" element={<Faqs />} />
             <Route path="/Tos" element={<Tos />} />
             <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
+            <Route path="/AdminProfile" element={<AdminProfile />} />
+
 
 
           </Routes>
